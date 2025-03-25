@@ -34,7 +34,7 @@ const app = express();
 
 // Enable CORS for all routes
 app.use(cors({
-  origin: 'http://localhost:5173', // Allow requests from your frontend
+  origin: 'https://caseevalpro.com', // Allow requests from your frontend
   methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods
   credentials: true // Allow credentials (if needed)
 }));
