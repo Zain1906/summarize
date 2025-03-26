@@ -32,9 +32,9 @@ if (!fs.existsSync(uploadsDir)){
 
 const app = express();
 
-// Enable CORS for all routes
+// Configure CORS
 app.use(cors({
-  origin: '*', // Allow requests from your frontend
+  origin: 'https://caseevalpro.com', // Allow requests from your frontend
   methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods
   credentials: true // Allow credentials (if needed)
 }));
@@ -64,7 +64,9 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Something broke!' });
 });
 
-const PORT = process.env.PORT || 3000;
+app.options('*', cors()); // Enable preflight for all routes
+
+const PORT = process.env.PORT || 5000;
 
 // Connect to MongoDB and start server
 try {
