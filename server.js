@@ -34,8 +34,8 @@ const app = express();
 
 // Configure CORS
 app.use(cors({
-  origin: 'https://caseevalpro.com', // Allow requests from your frontend
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods
+  origin: '*', // Allow requests from your frontend
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Specify allowed methods
   credentials: true // Allow credentials (if needed)
 }));
 
