@@ -38,6 +38,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Specify allowed methods
   credentials: true // Allow credentials (if needed)
 }));
+app.options('*', cors()); // Enable preflight for all routes
 
 app.use(express.json());
 
@@ -64,7 +65,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Something broke!' });
 });
 
-app.options('*', cors()); // Enable preflight for all routes
+
 
 const PORT = process.env.PORT || 5000;
 
