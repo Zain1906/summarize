@@ -8,6 +8,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import mongoose from 'mongoose';
 
 const router = express.Router();
 
@@ -42,9 +43,10 @@ const isAdmin = async (req, res, next) => {
 // Get all documents (admin only)
 router.get('/documents', auth, isAdmin, async (req, res) => {
   try {
-    const documents = await Document.find()
+    const documents = await Document.find({ userId: { $ne: null } })
       .populate('userId', 'firstName lastName email')
       .sort({ uploadDate: -1 });
+    console.log(documents);
     
     res.json(documents);
   } catch (error) {
@@ -68,8 +70,41 @@ router.get('/documents/:id/download', auth, isAdmin, async (req, res) => {
   }
 });
 
+// Delete a user
+router.delete('/:id', auth, isAdmin, async (req, res) => {
+  console.log(req.params.id);
+  const session = await mongoose.startSession();  // Start a transaction
+  session.startTransaction();
+  try {
+    const user = await User.findById(req.params.id).session(session);
+    console.log(user);
+    if (!user) {
+      await session.abortTransaction();  // Abort transaction if user not found
+      session.endSession();
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Delete all documents associated with the user
+    const document = await Document.deleteMany({ userId: req.params.id }).session(session);
+    console.log(document);
+
+    // Delete the user
+    await User.findByIdAndDelete(req.params.id, { session: session });
+
+    await session.commitTransaction();  // Commit the transaction
+    session.endSession();
+    res.json({ message: 'User and all associated documents deleted' });
+  } catch (error) {
+    await session.abortTransaction();  // Abort the transaction on error
+    session.endSession();
+    console.log("Issues:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
 // Admin upload summary route
-router.post('/upload-summary', auth, upload.single('summary'), async (req, res) => {
+router.post('/upload-summary', auth, isAdmin, upload.single('summary'), async (req, res) => {
   console.log('Received body:', req.body); // Log the incoming request body
   console.log('Received file:', req.file); // Log the uploaded file
 

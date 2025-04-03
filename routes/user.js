@@ -16,14 +16,13 @@ router.get('/summaries/:userId', auth, async (req, res) => {
   }
 });
 
-// Get all users with role 'user'
-router.get('/', auth, async (req, res) => {
+// Get all users
+router.get('/', async (req, res) => {
   try {
-    const users = await User.find({ role: 'user' }); // Filter by role
-    res.status(200).json(users);
+    const users = await User.find();
+    res.json(users);
   } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({ message: 'Error fetching users' });
+    res.status(500).json({ message: error.message });
   }
 });
 
@@ -38,5 +37,7 @@ router.get('/summaries', auth, async (req, res) => {
     res.status(500).json({ message: 'Error fetching summaries' });
   }
 });
+
+
 
 export default router; 
