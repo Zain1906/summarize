@@ -94,6 +94,7 @@ router.get('/', auth, async (req, res) => {
 // Get documents for a specific user by user ID (this route can be used for the ManageUsers component)
 router.get('/:userId', async (req, res) => {
   try {
+    console.log(req.params.userId)
     const files = await Document.find({ userId: req.params.userId });
     res.json(files.map(file => ({
       id: file._id,

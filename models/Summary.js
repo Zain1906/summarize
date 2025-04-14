@@ -29,6 +29,10 @@ const summarySchema = new mongoose.Schema({
   filePath: {
     type: String,
     required: true
+  },
+  pageCount: {
+    type: Number,
+    required: true
   }
 });
 

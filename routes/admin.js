@@ -7,6 +7,7 @@ import User from '../models/User.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { PDFDocument } from 'pdf-lib';
 import { dirname } from 'path';
 import mongoose from 'mongoose';
 
@@ -123,6 +124,20 @@ router.post('/upload-summary', auth, isAdmin, upload.single('summary'), async (r
     if (!userExists) {
       return res.status(400).json({ message: 'User not found' });
     }
+    const file = req.file;
+      let pageCount = 0;
+
+      // Determine file type and count pages if it's a PDF
+      if (file.mimetype === 'application/pdf') {
+        try {
+          const fileBuffer = fs.readFileSync(file.path);
+          const pdfDoc = await PDFDocument.load(fileBuffer);
+          pageCount = pdfDoc.getPageCount();
+        } catch (pdfError) {
+          console.error('Error processing PDF:', pdfError);
+        }
+      }
+    
 
     const summary = new Summary({
       userId: userId, // Associate with the specific user
@@ -130,7 +145,10 @@ router.post('/upload-summary', auth, isAdmin, upload.single('summary'), async (r
       originalName: req.file.originalname,
       fileType: req.file.mimetype,
       fileSize: req.file.size,
-      filePath: req.file.path
+      filePath: req.file.path,
+      pageCount: pageCount,
+      uploadDate: new Date()
+
     });
 
     await summary.save();
