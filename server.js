@@ -15,6 +15,7 @@ import mongoose from 'mongoose';
 // Load environment variables first
 dotenv.config();
 
+
 // Check if required environment variables are set
 if (!process.env.MONGODB_URI) {
   console.error('MONGODB_URI is not defined in .env file');
