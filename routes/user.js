@@ -96,50 +96,70 @@ router.get('/summary/:summaryId', auth, async (req, res) => {
 
 router.post('/extract-text', async (req, res) => {
   try {
-    const safeFileName = path.basename(req.body.filePath);
-    const filePath = path.join(__dirname, 'summaries', safeFileName);
+    console.log("Extraction-text");
 
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ message: 'File not found' });
+    // Step 1: Get and sanitize file name
+    const safeFileName = path.basename(req.body.filePath);
+    console.log("Received filePath from client:", req.body.filePath);
+    console.log("Sanitized safeFileName:", safeFileName);
+
+    // Step 2: Clean and prepare for fuzzy matching
+    const requestedName = safeFileName
+      .replace(/\.pdf$/i, '')  // remove ".pdf"
+      .trim()
+      .toLowerCase();
+
+    const summariesDir = path.join(__dirname, 'summaries');
+    const allFiles = fs.readdirSync(summariesDir);
+
+    // Step 3: Try to find the closest match in the folder
+    const matchedFile = allFiles.find(file =>
+      file.toLowerCase().includes(requestedName)
+    );
+
+    if (!matchedFile) {
+      return res.status(404).json({ message: 'File not found in summaries folder' });
     }
 
+    const filePath = path.join(summariesDir, matchedFile);
+    console.log("Matched file path:", filePath);
+
+    // Step 4: Extract PDF text
     const rawText = await extractPdfText(filePath);
 
-    // Step 1: Parse mapping section at end of summary
+    // Step 5: Parse the "Detailed Matching Report" section
     const referenceMap = {};
-const matchSection = rawText.split('## Detailed Matching Report')[1]?.split('## Summary Table')[0] || '';
+    const matchSection = rawText.split('## Detailed Matching Report')[1]?.split('## Summary Table')[0] || '';
+    const matchLines = matchSection.split('\n').map(line => line.trim()).filter(Boolean);
 
-const matchLines = matchSection.split('\n').map(line => line.trim()).filter(Boolean);
+    let currentFile = '';
 
-let currentFile = '';
+    for (const line of matchLines) {
+      const filenameMatch = line.match(/^###\s+\d+\.\s+(.*?)\s*\((\d+)\s+pages\)/i);
+      if (filenameMatch) {
+        currentFile = filenameMatch[1].trim().replace(/ /g, '_');
+        continue;
+      }
 
-for (const line of matchLines) {
-  // Detect lines with filenames
-  const filenameMatch = line.match(/^###\s+\d+\.\s+(.*?)\s*\((\d+)\s+pages\)/i);
-  if (filenameMatch) {
-    currentFile = filenameMatch[1].trim().replace(/ /g, '_');
-    continue;
-  }
-
-  // Detect matched references
-  const referenceMatch = line.match(/SIBTF\s*-\s*SIF\d+\s*-\s*([A-Z])/g);
-  if (referenceMatch && currentFile) {
-    for (const ref of referenceMatch) {
-      const cleanedRef = ref.trim();
-      referenceMap[cleanedRef] = currentFile;
+      const referenceMatch = line.match(/SIBTF\s*-\s*SIF\d+\s*-\s*([A-Z])/g);
+      if (referenceMatch && currentFile) {
+        for (const ref of referenceMatch) {
+          const cleanedRef = ref.trim();
+          referenceMap[cleanedRef] = currentFile;
+        }
+      }
     }
-  }
-}
-    // console.log(rawText)
-    // Step 2: Format text with mapped buttons
+
+    // Step 6: Format and send back response
     const formattedText = formatExtractedText(rawText, referenceMap);
-    // console.log(formattedText)
     res.json({ text: formattedText });
+
   } catch (err) {
     console.error('Error extracting text:', err);
     res.status(500).json({ message: 'Failed to extract PDF text.' });
   }
 });
+
 
 
 

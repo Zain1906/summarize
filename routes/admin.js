@@ -59,6 +59,7 @@ router.get('/documents', auth, isAdmin, async (req, res) => {
 // Download document (admin only)
 router.get('/documents/:id/download', auth, isAdmin, async (req, res) => {
   try {
+    console.log("Working! Download")
     const document = await Document.findById(req.params.id);
     if (!document) {
       return res.status(404).json({ message: 'Document not found' });
