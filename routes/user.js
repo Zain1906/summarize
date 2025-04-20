@@ -165,6 +165,7 @@ router.post('/extract-text', async (req, res) => {
 
 router.get('/:fileId/download', async (req, res) => {
   try {
+    console.log("Downloading")
     const document = await Summary.findById(req.params.fileId);
     if (!document) {
       return res.status(404).json({ message: 'Document not found' });
