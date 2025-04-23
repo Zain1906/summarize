@@ -18,6 +18,9 @@ const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const ELEVEN_API_KEY = process.env.ELEVEN_API_KEY;
+const ELEVEN_AGENT_ID = process.env.ELEVEN_AGENT_ID;
+
 // Configure multer for file upload to the 'summaries' directory
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
