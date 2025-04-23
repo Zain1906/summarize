@@ -4,6 +4,7 @@ import { auth, admin } from '../middleware/auth.js';
 import multer from 'multer';
 import Summary from '../models/Summary.js';
 import User from '../models/User.js';
+import Transcript from '../models/Transcript.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -47,7 +48,7 @@ router.get('/documents', auth, isAdmin, async (req, res) => {
     const documents = await Document.find({ userId: { $ne: null } })
       .populate('userId', 'firstName lastName email')
       .sort({ uploadDate: -1 });
-    console.log(documents);
+    // console.log(documents);
     
     res.json(documents);
   } catch (error) {
@@ -64,13 +65,53 @@ router.get('/documents/:id/download', auth, isAdmin, async (req, res) => {
     if (!document) {
       return res.status(404).json({ message: 'Document not found' });
     }
-    
+    // console.log("File Path = " + filePath);
     res.download(document.filePath, document.originalName);
   } catch (error) {
     console.error('Error downloading document:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+router.get(
+  '/transcripts',
+  auth,
+  admin,
+  async (req, res) => {
+    try {
+      console.log("Got there")
+      // fetch and populate user name
+      const transcripts = await Transcript.find()
+        .sort({ createdAt: -1 })
+        .populate('userId', 'firstName lastName');
+      res.json(transcripts);
+    } catch (err) {
+      console.error('Error fetching transcripts:', err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  }
+);
+
+// — PATCH mark all unseen as seen
+router.patch(
+  '/transcripts/mark-all-seen',
+  auth,
+  admin,
+  async (req, res) => {
+    try {
+      console.log("Good work")
+      await Transcript.updateMany(
+        { seen: false },
+        { $set: { seen: true } }
+      );
+      res.json({ message: 'All transcripts marked seen' });
+    } catch (err) {
+      console.error('Error marking transcripts seen:', err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  }
+);
+
 
 // Delete a user
 router.delete('/:id', auth, isAdmin, async (req, res) => {
@@ -105,10 +146,11 @@ router.delete('/:id', auth, isAdmin, async (req, res) => {
 });
 
 
+
 // Admin upload summary route
 router.post('/upload-summary', auth, isAdmin, upload.single('summary'), async (req, res) => {
-  console.log('Received body:', req.body); // Log the incoming request body
-  console.log('Received file:', req.file); // Log the uploaded file
+  // console.log('Received body:', req.body); // Log the incoming request body
+  // console.log('Received file:', req.file); // Log the uploaded file
 
   // const { userId } = req.body._id; // Get the user ID from the request body
   const userId = req.body["_id"];

@@ -2,6 +2,7 @@ import express from 'express';
 import Summary from '../models/Summary.js';
 import { auth } from '../middleware/auth.js';
 import User from '../models/User.js';
+import Transcript from '../models/Transcript.js';
 import fs from 'fs';
 import path from 'path';
 // import pdfParse from 'pdf-parse';
@@ -177,39 +178,81 @@ router.get('/:fileId/download', async (req, res) => {
     res.status(500).json({ message: 'Error downloading document' });
   }
 });
+router.post(
+  '/submit-transcript',
+  auth,                  // ensure user is authenticated
+  async (req, res) => {
+    
+    try {
+      const { transcript, summaryId } = req.body;
+      console.log(
+        `Transcript received for summary ${summaryId}:`,
+        transcript
+      );
 
+      // create & save
+      const newTranscript = new Transcript({
+        userId: req.user._id,
+        summaryId,
+        text: transcript,
+        seen: false
+      });
+      await newTranscript.save();
+
+      // respond
+      res
+        .status(201)
+        .json({ message: 'Transcript received', transcript: newTranscript });
+    } catch (err) {
+      console.error('Transcript error:', err);
+      res.status(500).json({ message: 'Error saving transcript' });
+    }
+  }
+);
 router.get('/preview/:filename', async (req, res) => {
   try {
     const uploadsDir = path.join(__dirname, '../uploads');
 
-    // Step 1: Clean up the requested filename
-    let requestedName = req.params.filename
-      .replace(/_/g, ' ')                // Underscores to spaces
-      .replace(/\.pdf$/i, '')            // Remove `.pdf`
-      .trim();                           // Trim any whitespace
+    // Step 1: Clean up the requested filename (remove extension, to lowercase)
+    const rawRequested = req.params.filename
+      .replace(/\.pdf$/i, '')       // strip “.pdf”
+      .toLowerCase();
 
-    console.log('Requested name:', requestedName);
+    // Normalize by removing spaces and underscores
+    const requestedNormalized = rawRequested.replace(/[_\s]+/g, '');
 
-    // Step 2: Read all files and find one that includes the requested name
+    console.log('Requested normalized:', requestedNormalized);
+
+    // Step 2: Read all files and normalize them too
     const files = fs.readdirSync(uploadsDir);
-    const matchedFile = files.find(file =>
-      file.toLowerCase().includes(requestedName.toLowerCase())
-    );
+    const matchedFile = files.find((file) => {
+      // strip extension, lowercase
+      const rawFile = file.replace(/\.pdf$/i, '').toLowerCase();
+      // normalize
+      const fileNormalized = rawFile.replace(/[_\s]+/g, '');
+      return fileNormalized.includes(requestedNormalized);
+    });
 
     if (!matchedFile) {
       return res.status(404).json({ message: 'File not found' });
     }
 
-    // Step 3: Return it as an inline preview
+    // Step 3: Stream it inline
     const filePath = path.join(uploadsDir, matchedFile);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${matchedFile}"`);
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${matchedFile}"`
+    );
     fs.createReadStream(filePath).pipe(res);
   } catch (error) {
     console.error('Error previewing file:', error);
     res.status(500).json({ message: 'Failed to preview file' });
   }
 });
+
+
+
 
 
 
