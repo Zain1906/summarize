@@ -127,7 +127,7 @@ router.post('/extract-text', async (req, res) => {
 
     // Step 4: Extract PDF text
     const rawText = await extractPdfText(filePath);
-
+    // console.log(rawText)
     // Step 5: Parse the "Detailed Matching Report" section
     const referenceMap = {};
     const matchSection = rawText.split('## Detailed Matching Report')[1]?.split('## Summary Table')[0] || '';
@@ -153,6 +153,7 @@ router.post('/extract-text', async (req, res) => {
 
     // Step 6: Format and send back response
     const formattedText = formatExtractedText(rawText, referenceMap);
+    console.log(formattedText);
     res.json({ text: formattedText });
 
   } catch (err) {

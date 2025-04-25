@@ -87,6 +87,8 @@ router.get(
       const transcripts = await Transcript.find()
         .sort({ createdAt: -1 })
         .populate('userId', 'firstName lastName');
+
+      console.log(transcripts)
       res.json(transcripts);
     } catch (err) {
       console.error('Error fetching transcripts:', err);
